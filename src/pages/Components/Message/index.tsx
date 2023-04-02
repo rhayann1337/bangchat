@@ -10,10 +10,10 @@ export const Message: React.FC<MessageProps> = ({message, author}) => {
     return (
         <Container>
             <TextAuthor>
-                James
+                {author}
             </TextAuthor>
             <TextMessage>
-                Teste mensagem
+                {message}
             </TextMessage>
         </Container>
     )

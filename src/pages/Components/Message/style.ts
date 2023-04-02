@@ -8,6 +8,9 @@ flex-direction: column;
 align-items: flex-start;
 padding: 12px 16px;
 width: fit-content;
+max-width: 100%;
+margin-bottom: 16px;
+background-color: white;
 `
 
 export const TextAuthor = styled.div`

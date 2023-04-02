@@ -1,16 +1,18 @@
-import React from "react";
-import Message from "../Components/Message";
+import React, { useState } from "react";
+import Chat from "../Components/Chat";
 import { Container } from "./style";
 
 export const Home: React.FC = () => {
+  const [message, setMessage] = useState("");
+
+  const handleInputChange = (e: any) => {
+    let inputValue = e.target.value;
+    setMessage(inputValue);
+  };
+
   return (
     <Container>
-      <Message
-        author={"James"}
-        message={
-          "Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s"
-        }
-      />
+      <Chat messages={[]} onChange={(e: any) => handleInputChange(e)} />
     </Container>
   );
 };
