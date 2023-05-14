@@ -1,6 +1,6 @@
 import { Input, Textarea } from "@chakra-ui/react";
 import React, { useState } from "react";
-import Message from "../Message";
+import Message, { MessageProps } from "../Message";
 import {
   Container,
   ContainerMessages,
@@ -9,7 +9,7 @@ import {
 } from "./style";
 
 type ChatProps = {
-  messages: any;
+  messages: MessageProps[];
   onChange: (e: any) => void;
 };
 
