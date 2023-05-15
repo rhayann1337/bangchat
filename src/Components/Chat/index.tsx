@@ -8,20 +8,35 @@ import {
 } from "./style";
 import Message from "../Message";
 import { Message as MessageType } from "twilio-chat";
+import { format } from "date-fns";
 
 type ChatProps = {
-  messages: any[];
+  channelName: string;
+  messages: MessageType[];
   onChange: (e: any) => void;
   onSubmit: (e: any) => void;
 };
 
-export const Chat: React.FC<ChatProps> = ({ onChange, onSubmit, messages }) => {
+export const Chat: React.FC<ChatProps> = ({
+  onChange,
+  onSubmit,
+  messages,
+  channelName,
+}) => {
   return (
     <Container>
-      <Text>Channel name</Text>
+      <Text>Channel - {channelName}</Text>
       <ContainerMessages>
-        {messages.map((message) => {
-          return <Message author={message.author} message={message.body} />;
+        {messages.map((message, index) => {
+          const dateFormated = format(message.dateCreated, "h:mm a");
+          return (
+            <Message
+              author={message.author}
+              message={message.body}
+              date={dateFormated}
+              key={index}
+            />
+          );
         })}
       </ContainerMessages>
 
@@ -31,8 +46,9 @@ export const Chat: React.FC<ChatProps> = ({ onChange, onSubmit, messages }) => {
           size="lg"
           height={"40px"}
           onChange={onChange}
+          onSubmit={onSubmit}
         />
-        <button onClick={onSubmit}>send message</button>
+        <button onClick={onSubmit}>Send message</button>
       </ContainerSendMessage>
     </Container>
   );

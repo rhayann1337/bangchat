@@ -1,7 +1,7 @@
 import React, { ChangeEvent, useCallback, useState } from "react";
 import { Container } from "./style";
 import Chat from "../../Components/Chat";
-import { Button, Input } from "@chakra-ui/react";
+import { Button, Input, useToast } from "@chakra-ui/react";
 import axios from "axios";
 import { Channel, Client, Message } from "twilio-chat";
 
@@ -11,6 +11,7 @@ export const Home: React.FC = () => {
   const [message, setMessage] = useState("");
   const [joinedRoom, setJoinedRoom] = useState<Channel>();
   const [listMessages, setListMessages] = useState<Message[]>([]);
+  const toast = useToast();
 
   const handleGenerateToken = useCallback(
     async (user: string) => {
@@ -29,42 +30,63 @@ export const Home: React.FC = () => {
     handleConnect();
   };
 
-  const createOrJoinRoom = useCallback((client: Client) => {
-    client
-      .getChannelByUniqueName(roomName)
-      .then((room) => {
-        sendNotificationJoinedRoom(room);
-        sendNotificationOtherJoinedRoom(room);
-        messageAddedNotification(room);
-      })
-      .catch(() => {
-        client
-          .createChannel({
-            uniqueName: roomName,
-            friendlyName: roomName,
-          })
-          .then((room) => {
-            sendNotificationJoinedRoom(room);
-            sendNotificationOtherJoinedRoom(room);
-            messageAddedNotification(room);
-          })
-          .catch(() => {
-            console.log("Couldnt create room");
-          });
-      });
-  }, []);
+  const handleNotify = (room: Channel) => {
+    sendNotificationJoinedRoom(room);
+    sendNotificationOtherJoinedRoom(room);
+    messageAddedNotification(room);
+    sendNotificationOtherLeavesRoom(room);
+  };
+
+  const createOrJoinRoom = useCallback(
+    (client: Client) => {
+      console.log("room", roomName);
+      client
+        .getChannelByUniqueName(roomName)
+        .then((room) => {
+          handleNotify(room);
+        })
+        .catch(() => {
+          client
+            .createChannel({
+              uniqueName: roomName,
+              friendlyName: roomName,
+            })
+            .then((room) => {
+              handleNotify(room);
+            })
+            .catch(() => {
+              toast({
+                title: "Error",
+                description: "Couldnt create room",
+                status: "error",
+                duration: 3000,
+                isClosable: true,
+              });
+            });
+        });
+    },
+    [roomName]
+  );
 
   const handleConnect = useCallback(async () => {
     const { token } = await handleGenerateToken(user);
 
     const client = new Client(token);
-    console.log(client);
 
     if (joinedRoom) return;
+
     client
       .getSubscribedChannels()
       .then(() => createOrJoinRoom(client))
-      .catch((e: Error) => console.log("deu pau", e));
+      .catch((e: Error) => {
+        toast({
+          title: "Error",
+          description: "An error occurred",
+          status: "error",
+          duration: 3000,
+          isClosable: true,
+        });
+      });
   }, [user, joinedRoom, roomName]);
 
   const messageAddedNotification = useCallback((room: Channel) => {
@@ -77,28 +99,56 @@ export const Home: React.FC = () => {
     room.join().then(() => {
       setJoinedRoom(room);
       console.log(user + ` entrou no chat` + room.uniqueName);
+      toast({
+        title: "Joined room.",
+        description: "Now you can send messages.",
+        status: "success",
+        duration: 3000,
+        isClosable: true,
+      });
     });
   }, []);
 
   const handleSendMessage = useCallback((room: Channel, text: string) => {
-    if (!room) return;
+    if (!room || !text) return;
     room.sendMessage(text);
+    setMessage("");
   }, []);
 
   const sendNotificationOtherJoinedRoom = useCallback((room: Channel) => {
     room.on("memberJoined", (member) => {
       console.log(member.identity + "Entrou na sala");
+      toast({
+        title: `${member.identity} joined room.`,
+        status: "info",
+        duration: 3000,
+        isClosable: true,
+      });
+    });
+  }, []);
+
+  const sendNotificationOtherLeavesRoom = useCallback((room: Channel) => {
+    room.on("memberLeft", (member) => {
+      toast({
+        title: `${member.identity} left room.`,
+        status: "info",
+        duration: 3000,
+        isClosable: true,
+      });
     });
   }, []);
 
   return (
     <Container>
       {joinedRoom ? (
-        <Chat
-          messages={listMessages}
-          onChange={(e) => setMessage(e.target.value)}
-          onSubmit={() => handleSendMessage(joinedRoom, message)}
-        />
+        <>
+          <Chat
+            channelName={roomName}
+            messages={listMessages}
+            onChange={(e) => setMessage(e.target.value)}
+            onSubmit={() => handleSendMessage(joinedRoom, message)}
+          />
+        </>
       ) : (
         <form onSubmit={handleJoin}>
           <Input
